@@ -4,4 +4,3 @@ flask-pymongo
 python-dotenv
 bcrypt
 PyJWT
-geopy
