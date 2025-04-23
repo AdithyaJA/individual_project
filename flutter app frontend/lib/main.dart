@@ -10,12 +10,13 @@ import 'screens/donations/my_donations_screen.dart';
 import 'screens/donations/my_claimed_donations_screen.dart';
 import 'screens/donations/edit_donation_screen.dart';
 import 'screens/dashboard/volunteer_dashboard_screen.dart';
-
+import 'screens/profile/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform, // from firebase_config.dart
+    options:
+        DefaultFirebaseOptions.currentPlatform, // from firebase_config.dart
   );
   runApp(const FoodFlowApp());
 }
@@ -37,7 +38,8 @@ class FoodFlowApp extends StatelessWidget {
         '/donation/create': (context) => const CreateDonationScreen(),
         '/donation/my': (context) => const MyDonationsScreen(),
         '/dashboard/receiver': (context) => const ReceiverDashboard(),
-        '/dashboard/volunteer': (context) => const VolunteerDashboardScreen(), 
+        '/dashboard/volunteer': (context) => const VolunteerDashboardScreen(),
+        '/profile': (context) => const ProfileScreen(),
         '/donation/claimed': (context) => const MyClaimedDonationsScreen(),
         '/donation/edit': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map;

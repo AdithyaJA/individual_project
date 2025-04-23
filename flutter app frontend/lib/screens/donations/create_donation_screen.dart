@@ -4,6 +4,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/donation_service.dart';
 import '../../firebase/image_upload.dart';
+import '../../services/auth_service.dart';
+import '../../services/notification_service.dart';
 
 class CreateDonationScreen extends StatefulWidget {
   const CreateDonationScreen({super.key});
@@ -65,73 +67,78 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
     }
   }
 
-Future<void> _submitDonation() async {
-  try {
-    print("🔥 Submit button pressed");
+  Future<void> _submitDonation() async {
+    try {
+      if (descriptionController.text.isEmpty ||
+          quantityController.text.isEmpty ||
+          selectedDateTime == null ||
+          selectedImage == null ||
+          location == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please complete all fields")),
+        );
+        return;
+      }
 
-    if (descriptionController.text.isEmpty ||
-        quantityController.text.isEmpty ||
-        selectedDateTime == null ||
-        selectedImage == null ||
-        location == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please complete all fields")),
+      String imageUrl =
+          await ImageUploader.uploadImage(selectedImage!) ??
+          "https://via.placeholder.com/150?text=Upload+Failed";
+
+      if (imageUrl.contains("placeholder")) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Image upload failed, using placeholder"),
+          ),
+        );
+      }
+
+      final success = await DonationService.createDonation(
+        description: descriptionController.text,
+        quantity: quantityController.text,
+        expiresAt: selectedDateTime!,
+        imageUrl: imageUrl,
+        lat: location!.latitude,
+        lng: location!.longitude,
       );
-      print("❌ Incomplete form fields");
-      return;
+
+      if (success) {
+        final userId = await AuthService.getUserId();
+        if (userId != null) {
+          await NotificationService.createNotification(
+            userId: userId,
+            message: "Your donation was created successfully!",
+            type: 'donation',
+          );
+        }
+
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text("Success"),
+                content: const Text("Donation submitted successfully!"),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pushReplacementNamed(context, '/dashboard');
+                    },
+                    child: const Text("OK"),
+                  ),
+                ],
+              ),
+        );
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Donation failed")));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Something went wrong: $e")));
     }
-
-    print("📸 Uploading image...");
-    String imageUrl = await ImageUploader.uploadImage(selectedImage!) ??
-        "https://via.placeholder.com/150?text=Upload+Failed";
-
-    if (imageUrl.contains("placeholder")) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Image upload failed, using placeholder")),
-      );
-    }
-
-    print("📤 Sending donation to backend...");
-    final success = await DonationService.createDonation(
-      description: descriptionController.text,
-      quantity: quantityController.text,
-      expiresAt: selectedDateTime!,
-      imageUrl: imageUrl,
-      lat: location!.latitude,
-      lng: location!.longitude,
-    );
-
-    print("✅ Donation result: $success");
-
-    if (success) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("Success"),
-          content: const Text("Donation submitted successfully!"),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close dialog
-                Navigator.pushReplacementNamed(context, '/dashboard');
-              },
-              child: const Text("OK"),
-            ),
-          ],
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Donation failed")),
-      );
-    }
-  } catch (e) {
-    print("❌ ERROR in submitDonation: $e");
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Something went wrong: $e")),
-    );
   }
-}
 
   @override
   void initState() {
@@ -180,8 +187,7 @@ Future<void> _submitDonation() async {
               label: const Text("Upload Image"),
             ),
             const SizedBox(height: 16),
-            if (selectedImage != null)
-              Image.file(selectedImage!, height: 100),
+            if (selectedImage != null) Image.file(selectedImage!, height: 100),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: _submitDonation,

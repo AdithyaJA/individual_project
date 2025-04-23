@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import '../../services/order_service.dart';
+import 'package:frontend/services/order_service.dart';
+import 'package:frontend/services/notification_service.dart';
 
 class MyClaimedDonationsScreen extends StatefulWidget {
   const MyClaimedDonationsScreen({super.key});
 
   @override
-  State<MyClaimedDonationsScreen> createState() => _MyClaimedDonationsScreenState();
+  State<MyClaimedDonationsScreen> createState() =>
+      _MyClaimedDonationsScreenState();
 }
 
-class _MyClaimedDonationsScreenState extends State<MyClaimedDonationsScreen> with SingleTickerProviderStateMixin {
+class _MyClaimedDonationsScreenState extends State<MyClaimedDonationsScreen>
+    with SingleTickerProviderStateMixin {
   List<dynamic> claimed = [];
   bool isLoading = true;
   late TabController _tabController;
@@ -37,14 +40,41 @@ class _MyClaimedDonationsScreenState extends State<MyClaimedDonationsScreen> wit
   Future<void> confirmReceived(String orderId) async {
     final success = await OrderService.confirmOrder(orderId);
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Donation confirmed")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Donation confirmed")));
+
+      // Get related order and donation data
+      final order = claimed.firstWhere((o) => o['_id'] == orderId);
+      final donation = order['donationId'] ?? {};
+      final donorId = donation['donorId'];
+      final volunteerId = order['volunteerId'];
+      final donationTitle = donation['description'] ?? 'your donation';
+
+      // ✅ Notify Donor
+      if (donorId != null) {
+        await NotificationService.createNotification(
+          userId: donorId,
+          message:
+              "Your donation '$donationTitle' has been confirmed by the receiver.",
+          type: "donation",
+        );
+      }
+
+      // ✅ Notify Volunteer
+      if (volunteerId != null) {
+        await NotificationService.createNotification(
+          userId: volunteerId,
+          message: "Receiver has confirmed delivery of '$donationTitle'.",
+          type: "donation",
+        );
+      }
+
       fetchClaimedDonations();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Confirmation failed")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Confirmation failed")));
     }
   }
 
@@ -59,24 +89,49 @@ class _MyClaimedDonationsScreenState extends State<MyClaimedDonationsScreen> wit
       itemCount: filtered.length,
       padding: const EdgeInsets.all(16),
       itemBuilder: (context, index) {
-        final donation = filtered[index]['donationId'];
-        final orderId = filtered[index]['_id'];
-        final status = filtered[index]['status'];
+        final order = filtered[index];
+        final donation = order['donationId'] ?? {}; // ✅ fallback if null
+        final orderId = order['_id'];
+        final status = order['status'];
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            title: Text(donation['description'] ?? 'No description'),
-            subtitle: Column(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Qty: ${donation['quantity']}"),
-                Text("Status: $status"),
-                if (status == 'claimed')
-                  TextButton(
-                    onPressed: () => confirmReceived(orderId),
-                    child: const Text("Confirm Received"),
-                  )
+                Text(
+                  donation['description'] ?? 'No description',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text("Qty: ${donation['quantity'] ?? 'N/A'}"),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Status: $status",
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    if (status == 'claimed')
+                      TextButton(
+                        onPressed: () => confirmReceived(orderId),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.green,
+                        ),
+                        child: const Text("Confirm Received"),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -88,10 +143,16 @@ class _MyClaimedDonationsScreenState extends State<MyClaimedDonationsScreen> wit
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFFF5E9),
       appBar: AppBar(
         title: const Text("My Claimed Donations"),
+        backgroundColor: Colors.orange,
         bottom: TabBar(
           controller: _tabController,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          labelColor: Colors.white,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
           tabs: const [
             Tab(text: "Claimed"),
             Tab(text: "On Delivery"),
@@ -99,16 +160,19 @@ class _MyClaimedDonationsScreenState extends State<MyClaimedDonationsScreen> wit
           ],
         ),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildList('claimed'),
-                _buildList('in-transit'),
-                _buildList('delivered'),
-              ],
-            ),
+      body:
+          isLoading
+              ? const Center(
+                child: CircularProgressIndicator(color: Colors.orange),
+              )
+              : TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildList('claimed'),
+                  _buildList('in-transit'),
+                  _buildList('delivered'),
+                ],
+              ),
     );
   }
 }

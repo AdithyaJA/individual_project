@@ -8,7 +8,8 @@ class MyDonationsScreen extends StatefulWidget {
   State<MyDonationsScreen> createState() => _MyDonationsScreenState();
 }
 
-class _MyDonationsScreenState extends State<MyDonationsScreen> with SingleTickerProviderStateMixin {
+class _MyDonationsScreenState extends State<MyDonationsScreen>
+    with SingleTickerProviderStateMixin {
   List<dynamic> donations = [];
   bool isLoading = true;
   late TabController _tabController;
@@ -44,17 +45,27 @@ class _MyDonationsScreenState extends State<MyDonationsScreen> with SingleTicker
         ).then((_) => fetchDonations());
       },
       child: Card(
+        elevation: 4,
         margin: const EdgeInsets.symmetric(vertical: 10),
-        elevation: 3,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ListTile(
-          leading: Image.network(
-            donation['image'],
-            width: 60,
-            height: 60,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => const Icon(Icons.image),
+          contentPadding: const EdgeInsets.all(12),
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              donation['image'],
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+              errorBuilder:
+                  (context, error, stackTrace) =>
+                      const Icon(Icons.image, size: 60),
+            ),
           ),
-          title: Text(donation['description']),
+          title: Text(
+            donation['description'],
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -68,7 +79,8 @@ class _MyDonationsScreenState extends State<MyDonationsScreen> with SingleTicker
   }
 
   Widget buildTabContent(String statusFilter) {
-    final filtered = donations.where((d) => d['status'] == statusFilter).toList();
+    final filtered =
+        donations.where((d) => d['status'] == statusFilter).toList();
 
     if (filtered.isEmpty) {
       return const Center(child: Text("No donations found"));
@@ -86,10 +98,16 @@ class _MyDonationsScreenState extends State<MyDonationsScreen> with SingleTicker
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFFF5E9),
       appBar: AppBar(
         title: const Text('My Donations'),
+        centerTitle: true,
+        backgroundColor: Colors.orange,
         bottom: TabBar(
           controller: _tabController,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
           tabs: const [
             Tab(text: 'Active'),
             Tab(text: 'On Delivery'),
@@ -97,16 +115,19 @@ class _MyDonationsScreenState extends State<MyDonationsScreen> with SingleTicker
           ],
         ),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                buildTabContent('pending'), // Active
-                buildTabContent('claimed'), // On Delivery
-                buildTabContent('confirmed'), // Ended
-              ],
-            ),
+      body:
+          isLoading
+              ? const Center(
+                child: CircularProgressIndicator(color: Colors.orange),
+              )
+              : TabBarView(
+                controller: _tabController,
+                children: [
+                  buildTabContent('pending'), // Active
+                  buildTabContent('claimed'), // On Delivery
+                  buildTabContent('confirmed'), // Ended
+                ],
+              ),
     );
   }
 }

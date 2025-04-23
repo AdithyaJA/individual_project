@@ -5,7 +5,8 @@ class AvailableOrdersListScreen extends StatefulWidget {
   const AvailableOrdersListScreen({super.key});
 
   @override
-  State<AvailableOrdersListScreen> createState() => _AvailableOrdersListScreenState();
+  State<AvailableOrdersListScreen> createState() =>
+      _AvailableOrdersListScreenState();
 }
 
 class _AvailableOrdersListScreenState extends State<AvailableOrdersListScreen> {
@@ -32,47 +33,87 @@ class _AvailableOrdersListScreenState extends State<AvailableOrdersListScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Delivery claimed successfully")),
       );
-      fetchAvailableOrders(); // refresh list
+      fetchAvailableOrders();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to claim delivery")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Failed to claim delivery")));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Available Orders")),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : availableOrders.isEmpty
-              ? const Center(child: Text("No available orders"))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: availableOrders.length,
-                  itemBuilder: (context, index) {
-                    final order = availableOrders[index];
-                    final donation = order['donationId'];
-
-                    return Card(
-                      child: ListTile(
-                        title: Text(donation['description'] ?? 'No description'),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Qty: ${donation['quantity']}"),
-                            const SizedBox(height: 8),
-                            ElevatedButton(
-                              onPressed: () => claimDelivery(donation['_id']),
-                              child: const Text("Accept Delivery"),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+      backgroundColor: const Color(0xFFFFF5E9),
+      appBar: AppBar(
+        title: const Text("Available Orders"),
+        backgroundColor: Colors.orange,
+        centerTitle: true,
+      ),
+      body:
+          isLoading
+              ? const Center(
+                child: CircularProgressIndicator(color: Colors.orange),
+              )
+              : availableOrders.isEmpty
+              ? const Center(
+                child: Text(
+                  "No available orders",
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
+              )
+              : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: availableOrders.length,
+                itemBuilder: (context, index) {
+                  final order = availableOrders[index];
+                  final donation = order['donationId'];
+
+                  return Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            donation['description'] ?? 'No description',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text("Qty: ${donation['quantity']}"),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => claimDelivery(donation['_id']),
+                              icon: const Icon(Icons.delivery_dining),
+                              label: const Text("Accept Delivery"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                textStyle: const TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
     );
   }
 }

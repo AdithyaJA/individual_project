@@ -16,7 +16,7 @@ class DonationService {
     final token = await AuthService.getToken();
 
     final response = await http.post(
-      Uri.parse('${app_api.Api.baseUrl}/donations'),
+      Uri.parse('${app_api.Api.baseUrl}/donations/'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -26,10 +26,7 @@ class DonationService {
         'quantity': quantity,
         'expiresAt': expiresAt.toIso8601String(),
         'image': imageUrl,
-        'location': {
-          'lat': lat,
-          'lng': lng,
-        }
+        'location': {'lat': lat, 'lng': lng},
       }),
     );
 
@@ -40,32 +37,30 @@ class DonationService {
       return false;
     }
   }
-static Future<List<dynamic>> getAllAvailableDonations() async {
-  final token = await AuthService.getToken();
 
-  final response = await http.get(
-    Uri.parse('${app_api.Api.baseUrl}/donations'),
-    headers: {
-      'Authorization': 'Bearer $token',
-    },
-  );
+  static Future<List<dynamic>> getAllAvailableDonations() async {
+    final token = await AuthService.getToken();
 
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body);
-  } else {
-    print("Failed to fetch available donations: ${response.body}");
-    return [];
+    final response = await http.get(
+      Uri.parse('${app_api.Api.baseUrl}/donations/'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print("Failed to fetch available donations: ${response.body}");
+      return [];
+    }
   }
-}
+
   // Fetch donor's own donations
   static Future<List<dynamic>> getMyDonations() async {
     final token = await AuthService.getToken();
 
     final response = await http.get(
       Uri.parse('${app_api.Api.baseUrl}/donations/my'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+      headers: {'Authorization': 'Bearer $token'},
     );
 
     if (response.statusCode == 200) {
@@ -78,7 +73,10 @@ static Future<List<dynamic>> getAllAvailableDonations() async {
   }
 
   // Update a donation
-  static Future<bool> updateDonation(String id, Map<String, dynamic> data) async {
+  static Future<bool> updateDonation(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     final token = await AuthService.getToken();
 
     final response = await http.put(
@@ -99,46 +97,43 @@ static Future<List<dynamic>> getAllAvailableDonations() async {
 
     final response = await http.delete(
       Uri.parse('${app_api.Api.baseUrl}/donations/$id'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+      headers: {'Authorization': 'Bearer $token'},
     );
 
     return response.statusCode == 200;
   }
+
   static Future<bool> claimDonation(String donationId) async {
-  final token = await AuthService.getToken();
+    final token = await AuthService.getToken();
 
-  final response = await http.post(
-    Uri.parse('${app_api.Api.baseUrl}/orders'),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    },
-    body: jsonEncode({
-      'donationId': donationId,
-    }),
-  );
+    final response = await http.post(
+      Uri.parse('${app_api.Api.baseUrl}/orders'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'donationId': donationId}),
+    );
 
-  return response.statusCode == 200;
-}
-static Future<bool> confirmDonationStatus(String donationId) async {
-  final token = await AuthService.getToken();
-
-  final response = await http.put(
-    Uri.parse('${app_api.Api.baseUrl}/api/donations/confirm/$donationId'),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-  );
-
-  if (response.statusCode == 200) {
-    return true;
-  } else {
-    print("Failed to confirm donation: ${response.body}");
-    return false;
+    return response.statusCode == 200;
   }
-}
 
+  static Future<bool> confirmDonationStatus(String donationId) async {
+    final token = await AuthService.getToken();
+
+    final response = await http.put(
+      Uri.parse('${app_api.Api.baseUrl}/api/donations/confirm/$donationId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      print("Failed to confirm donation: ${response.body}");
+      return false;
+    }
+  }
 }
