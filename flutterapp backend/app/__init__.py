@@ -1,29 +1,31 @@
 from flask import Flask
-from flask_pymongo import PyMongo
 from flask_cors import CORS
-from dotenv import load_dotenv
-import os
-
-mongo = PyMongo()
+from flask_jwt_extended import JWTManager
+from .routes.auth import auth_bp
+from .routes.donations import donation_bp
+from .routes.orders import order_bp
+from .routes.notifications import notification_bp
+from .routes.feedback import feedback_bp
+from .utils.db import init_db
+from app.jobs.donation_jobs import start_scheduler
+jwt = JWTManager()  # <-- ADD THIS
 
 def create_app():
-    load_dotenv()
-
     app = Flask(__name__)
     CORS(app)
+    start_scheduler()  # ✅ Start the job once
 
-    app.config['MONGO_URI'] ="mongodb+srv://lahiruflutter:lahiru@cluster0.oxqke.mongodb.net/foodapp?retryWrites=true&w=majority&appName=Cluster0"
-    app.config['SECRET_KEY'] ="mysupersecret"
+    # 🔐 Add this JWT config
+    app.config['JWT_SECRET_KEY'] = 'somethingSuperSecretAndRandom123'  # change this in prod
 
-    mongo.init_app(app)
+    # ✅ Init DB & JWT
+    init_db(app)
+    jwt.init_app(app)  # <-- ADD THIS
 
-    # Import and register Blueprints
-    from app.routes.auth_routes import auth_bp
-    from app.routes.donation_routes import donation_bp
-    from app.routes.volunteer_routes import volunteer_bp
-    
-    app.register_blueprint(volunteer_bp)
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(donation_bp)
-
+    # Blueprints
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(donation_bp, url_prefix='/api/donations')
+    app.register_blueprint(order_bp, url_prefix='/api/orders')
+    app.register_blueprint(notification_bp, url_prefix='/api/notifications')
+    app.register_blueprint(feedback_bp, url_prefix='/api/feedback')
     return app
