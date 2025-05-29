@@ -55,7 +55,7 @@ FoodFlowSL is a role-based food donation platform built using Flutter (frontend)
 Backend Setup:
 
     Clone the backend repo
-    git clone https://github.com/your-username/foodflowsl-backend.git
+    git clone https://github.com/AdithyaJA/foodflowsl-backend.git
     cd foodflowsl-backend
 
     Install dependencies
